@@ -150,28 +150,6 @@ def confidence_bar(prob):
     """
     st.markdown(bar_html, unsafe_allow_html=True)
 
-# ------------------------------
-#  ADVANCED MODE HELPERS
-# ------------------------------
-def show_tfidf_explanation(text):
-    X = vectorizer.transform([text])
-    feature_names = np.array(vectorizer.get_feature_names_out())
-
-    # For MultinomialNB, feature importance is in log probabilities
-    spam_log_prob = nb_model.feature_log_prob_[1]
-    ham_log_prob = nb_model.feature_log_prob_[0]
-    importance = spam_log_prob - ham_log_prob  # relative contribution to spam
-
-    top_indices = np.argsort(importance)[-20:]
-    important_words = {feature_names[i]: float(importance[i]) for i in top_indices}
-
-    st.subheader("🔍 Top TF-IDF Features Influencing Spam Prediction")
-    wc = WordCloud(width=700, height=300, background_color="black",
-                   colormap="Reds").generate_from_frequencies(important_words)
-    plt.imshow(wc, interpolation="bilinear")
-    plt.axis("off")
-    st.pyplot(plt)
-
 
 def show_bert_attention_placeholder():
     st.subheader("🧠 BERT Attention Visualization")
@@ -202,26 +180,8 @@ with tab_main:
             st.write(f"🌐 Detected Language: **{lang.upper()}**")
             confidence_bar(proba)
 
-# === ADVANCED TAB ===
-with tab_adv:
-    st.title("🧩 Advanced Model Insights")
-    st.write("Visualize model reasoning and feature importance.")
-
-    msg = st.text_area("Enter a message to inspect:", height=120, key="adv_msg")
-
-    if st.button("Explain"):
-        if not msg.strip():
-            st.warning("Enter text to explain.")
-        else:
-            lang = detect_language(msg)
-            st.write(f"🌐 Language: **{lang.upper()}**")
-
-            # Let user pick visualization
-            mode = st.radio("Select explanation type:", ["TF-IDF (Naive Bayes)", "BERT Attention"])
-            if mode == "TF-IDF (Naive Bayes)":
-                show_tfidf_explanation(msg)
-            else:
-                show_bert_attention_placeholder()
+\
 
 st.markdown("---")
 st.caption("Built with ❤️ using XLM-R (Language Detection) + BERT + Naive Bayes (TFIDF).")
+
