@@ -51,7 +51,6 @@ def detect_language(text: str):
     if not text:
         return "unknown"
 
-    # Pre-clean to remove noise
     clean = re.sub(r"http\S+|\$|\d+|[^A-Za-z\s]", "", text)
     if not clean:
         return "unknown"
@@ -71,13 +70,14 @@ def detect_language(text: str):
     else:
         lang = "unknown"
 
-    # Force English if low confidence and message looks short / spammy
     if confidence < 0.6 and lang == "unknown":
         lang = "english"
 
     return lang
+
+
 # ------------------------------
-#  LOAD MODELS
+#  LOAD MODELS (NO WARNINGS)
 # ------------------------------
 @st.cache_resource
 def load_models():
@@ -91,9 +91,8 @@ def load_models():
         tokenizer = BertTokenizer.from_pretrained(base)
         bert_model = BertForSequenceClassification.from_pretrained(base)
         bert_model.eval()
-
-    except Exception as e:
-        st.warning(f"⚠️ BERT model not loaded ({e}). Using only Naive Bayes.")
+    except:
+        pass  # Do NOT show warning
 
     return nb_model, vectorizer, threshold, tokenizer, bert_model
 
@@ -106,16 +105,21 @@ def predict_message(msg):
     lang = detect_language(msg)
 
     if lang == "english" and bert_model is not None:
-        inputs = tokenizer(msg, return_tensors="pt", truncation=True, padding=True)
-        with torch.no_grad():
-            outputs = bert_model(**inputs)
-            proba = torch.softmax(outputs.logits, dim=1)[0, 1].item()
+        try:
+            inputs = tokenizer(msg, return_tensors="pt", truncation=True, padding=True)
+            with torch.no_grad():
+                outputs = bert_model(**inputs)
+                proba = torch.softmax(outputs.logits, dim=1)[0, 1].item()
+        except:
+            X = vectorizer.transform([msg])
+            proba = nb_model.predict_proba(X)[0, 1]
     else:
         X = vectorizer.transform([msg])
         proba = nb_model.predict_proba(X)[0, 1]
 
     label = "Spam" if proba >= threshold else "Ham"
     return lang, label, proba
+
 
 # ------------------------------
 #  CUSTOM CONFIDENCE BAR
@@ -135,7 +139,7 @@ def confidence_bar(prob):
         label = "Spam"
 
     bar_html = f"""
-    <div style="border-radius: 8px; background-color: #ddd; height: 25px; width: 100%; position: relative;">
+    <div style="border-radius: 8px; background-color: #ddd; height: 28px; width: 100%; position: relative;">
         <div style="
             background-color: {color};
             width: {prob * 100}%;
@@ -144,7 +148,7 @@ def confidence_bar(prob):
             transition: width 0.3s ease;">
         </div>
         <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-                    color: black; font-weight: 600;">
+                    color: black; font-weight: 600; font-size: 14px;">
             {emoji} {label} ({prob:.2f})
         </div>
     </div>
@@ -152,40 +156,21 @@ def confidence_bar(prob):
     st.markdown(bar_html, unsafe_allow_html=True)
 
 
-def show_bert_attention_placeholder():
-    st.subheader("🧠 BERT Attention Visualization")
-    st.caption("Attention heatmaps can be generated using the model’s attention tensors. "
-               "To keep deployment lightweight, this demo uses a placeholder.")
-    st.image(
-        "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/bert_architecture.png",
-        use_container_width=True
-    )
-
 # ------------------------------
-#  STREAMLIT UI
+#  STREAMLIT UI (ONLY MAIN MODE)
 # ------------------------------
-tab_main= st.tabs(["🔎 Detect Phishing SMS"])
+st.title("📱 PhishX — SMS Phishing Detector")
+st.write("Detect English & Hinglish phishing or spam messages using AI models.")
 
-# === MAIN TAB ===
-with tab_main:
-    st.title("📱 PhishX — SMS Phishing Detector")
-    st.write("Detect English & Hinglish phishing or spam messages using AI models.")
+sms = st.text_area("✉️ Enter an SMS message:", height=120)
 
-    sms = st.text_area("✉️ Enter an SMS message:", height=120)
-
-    if st.button("Analyze"):
-        if not sms.strip():
-            st.warning("Please enter a message first.")
-        else:
-            lang, label, proba = predict_message(sms)
-            st.write(f"🌐 Detected Language: **{lang.upper()}**")
-            confidence_bar(proba)
-
-\
+if st.button("Analyze"):
+    if not sms.strip():
+        st.warning("Please enter a message first.")
+    else:
+        lang, label, proba = predict_message(sms)
+        st.write(f"🌐 Detected Language: **{lang.upper()}**")
+        confidence_bar(proba)
 
 st.markdown("---")
-st.caption("Built with ❤️ using XLM-R (Language Detection) + BERT + Naive Bayes (TFIDF).")
-
-
-
-
+st.caption("Built with ❤️ using XLM-R + BERT + Naive Bayes (TFIDF).")
