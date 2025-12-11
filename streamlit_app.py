@@ -91,8 +91,6 @@ def load_models():
         tokenizer = BertTokenizer.from_pretrained(base)
         bert_model = BertForSequenceClassification.from_pretrained(base)
         bert_model.eval()
-    except Exception as e:
-        st.warning(f"BERT model not loaded ({e}).)
 
     return nb_model, vectorizer, threshold, tokenizer, bert_model
 
@@ -184,5 +182,6 @@ with tab_main:
 
 st.markdown("---")
 st.caption("Built with ❤️ using XLM-R (Language Detection) + BERT + Naive Bayes (TFIDF).")
+
 
 
