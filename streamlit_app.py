@@ -92,7 +92,7 @@ def load_models():
         bert_model = BertForSequenceClassification.from_pretrained(base)
         bert_model.eval()
     except Exception as e:
-        st.warning(f"⚠️ BERT model not loaded ({e}). Using only Naive Bayes.")
+        st.warning(f"BERT model not loaded ({e}).)
 
     return nb_model, vectorizer, threshold, tokenizer, bert_model
 
@@ -163,7 +163,7 @@ def show_bert_attention_placeholder():
 # ------------------------------
 #  STREAMLIT UI
 # ------------------------------
-tab_main, tab_adv = st.tabs(["🔎 Detect Phishing SMS", "🧩 Advanced Mode"])
+tab_main= st.tabs(["🔎 Detect Phishing SMS"])
 
 # === MAIN TAB ===
 with tab_main:
@@ -184,4 +184,5 @@ with tab_main:
 
 st.markdown("---")
 st.caption("Built with ❤️ using XLM-R (Language Detection) + BERT + Naive Bayes (TFIDF).")
+
 
