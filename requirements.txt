@@ -1,0 +1,9 @@
+streamlit==1.32.0
+numpy
+pandas
+scikit-learn
+matplotlib
+wordcloud
+joblib
+torch
+transformers
